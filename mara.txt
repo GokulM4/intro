@@ -1,0 +1,913 @@
+Signup.razor
+@page "/Signup"
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+ 
+<h3>Sign Up</h3>
+ 
+<EditForm Model="@signup" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+ 
+    <div class="form-container">
+        <label>Username:</label><br />
+        <InputText @bind-Value="signup.USERNAME" class="form-control" />
+        <ValidationMessage For="@(() => signup.USERNAME)" />
+        <br />
+ 
+        <label>Password:</label><br />
+        <InputText @bind-Value="signup.PASSWORD" type="password" class="form-control" />
+        <ValidationMessage For="@(() => signup.PASSWORD)" />
+        <br />
+ 
+        <button type="submit">Sign Up</button>
+        <a href="/" class="secondary-button">Back to Login</a>
+    </div>
+</EditForm>
+ 
+@code {
+    private SignupModel signup = new();
+ 
+    private async Task HandleValidSubmit()
+    {
+        // Get the current user list (as JSON)
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "users");
+        List<User> users = string.IsNullOrWhiteSpace(json)
+            ? new List<User>()
+            : System.Text.Json.JsonSerializer.Deserialize<List<User>>(json);
+ 
+        // Check if username already exists
+        if (users.Any(u => u.Username == signup.USERNAME))
+        {
+            await JS.InvokeVoidAsync("alert", "Username already exists.");
+            return;
+        }
+ 
+        // Add new user
+        users.Add(new User { Username = signup.USERNAME, Password = signup.PASSWORD });
+ 
+        // Save back to localStorage
+        var updatedJson = System.Text.Json.JsonSerializer.Serialize(users);
+        await JS.InvokeVoidAsync("localStorage.setItem", "users", updatedJson);
+ 
+        Navigation.NavigateTo("/");
+    }
+ 
+    public class SignupModel
+    {
+        [Required(ErrorMessage = "Username is required")]
+        public string USERNAME { get; set; } = string.Empty;
+ 
+        [Required(ErrorMessage = "Password is required")]
+        public string PASSWORD { get; set; } = string.Empty;
+    }
+ 
+    public class User
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+}
+ 
+ 
+ 
+ 
+ 
+Signup.razor.css
+ 
+.form-container {
+    max-width: 460px;
+    margin: 2rem auto;
+    padding: 1.5rem 2rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+    background: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+     margin-top: 12%;
+}
+ 
+ 
+h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #333;
+}
+ 
+label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: #444;
+}
+ 
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 1rem;
+    border: 1.5px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+ 
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: #0078d7;
+    box-shadow: 0 0 4px #0078d7;
+}
+ 
+button {
+    width: 100%;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #0078d7;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+ 
+button:hover:not(:disabled) {
+    background-color: #005a9e;
+}
+ 
+button:disabled {
+    background-color: #cccccc;
+    cursor: default;
+}
+ 
+.secondary-button {
+    background-color: #e1e1e1;
+    color: #333;
+    margin-top: 0.75rem;
+}
+ 
+.secondary-button:hover {
+    background-color: #cfcfcf;
+}
+ 
+.message {
+    margin-top: 1rem;
+    padding: 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+ 
+.error-message {
+    background-color: #ffe6e6;
+    color: #cc0000;
+}
+ 
+.info-message {
+    background-color: #e6f0ff;
+    color: #005a9e;
+}
+ 
+ 
+Login.razor
+ 
+ 
+@page "/"
+ 
+ 
+ 
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+ 
+ 
+ 
+ 
+<EditForm Model="@login"
+          OnValidSubmit="@HandleValidSubmit"
+          FormName="LoginForm"
+          EnableEnhancedForm="false">
+    <DataAnnotationsValidator />
+    @* <ValidationSummary /> *@
+ 
+    <div class="form-container">
+        <h3>Login</h3>
+        <label>Username:</label><br />
+        <InputText @bind-Value="login.USERNAME" class="form-control" />
+        <ValidationMessage For="@(() => login.USERNAME)" />
+        <br />
+ 
+        <label>Password:</label><br />
+        <InputText @bind-Value="login.PASSWORD" class="form-control" type="password" />
+        <ValidationMessage For="@(() => login.PASSWORD)" />
+        <br />
+ 
+        <button type="submit">Login</button>
+        <p>
+        <a href="/Signup" class="btn btn-link">Sign up</a>
+        </p>
+ 
+    </div>
+</EditForm>
+ 
+@code {
+    private LoginModel login = new();
+ 
+    private async void HandleValidSubmit()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", "users");
+        List<User> users = string.IsNullOrWhiteSpace(json)
+            ? new List<User>()
+            : System.Text.Json.JsonSerializer.Deserialize<List<User>>(json);
+ 
+        var matchingUser = users.FirstOrDefault(u =>
+            u.Username == login.USERNAME && u.Password == login.PASSWORD);
+ 
+        if (matchingUser is not null)
+        {
+            Navigation.NavigateTo("/home");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Invalid username or password.");
+        }
+    }
+ 
+    public class LoginModel
+    {
+        [Required(ErrorMessage = "Username is required")]
+        public string USERNAME { get; set; } = string.Empty;
+ 
+        [Required(ErrorMessage = "Password is required")]
+        public string PASSWORD { get; set; } = string.Empty;
+    }
+ 
+    public class User
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+    }
+}
+ 
+ 
+ 
+Login.razor.css
+ 
+.form-container {
+    max-width: 460px;
+    margin: 2rem auto;
+    padding: 1.5rem 2rem;
+    border: 1px solid #444;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+    color: #000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-top: 12%;
+}
+ 
+h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #111;
+}
+ 
+label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: #111;
+}
+ 
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 1rem;
+    border: 1.5px solid #aaa;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+    background: #fdfdfd;
+    color: #000;
+}
+ 
+input[type="text"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: black;
+    box-shadow: 0 0 4px black;
+}
+ 
+button {
+    width: 100%;
+    padding: 0.5rem 0;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: black;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+ 
+button:hover:not(:disabled) {
+    background-color: #333;
+}
+ 
+button:disabled {
+    background-color: #ccc;
+    cursor: default;
+}
+ 
+.secondary-button {
+    background-color: #eaeaea;
+    color: #333;
+    margin-top: 0.75rem;
+}
+ 
+.secondary-button:hover {
+    background-color: #ccc;
+}
+ 
+.message {
+    margin-top: 1rem;
+    padding: 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+ 
+.error-message {
+    background-color: #fff0f0;
+    color: #900;
+}
+ 
+.info-message {
+    background-color: #f0f0f0;
+    color: #111;
+}
+ 
+body {
+    background: #f0f0f0;
+}
+ 
+ 
+Routes.razor
+ 
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData"/>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
+ 
+ 
+ 
+ 
+ 
+Weather.razor
+ 
+@page "/weather"
+@using WriteUp.Components.Layout
+@layout MainLayout
+ 
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@using System.Text.Json
+@using System.ComponentModel.DataAnnotations
+ 
+<h3 class="mt-4">📚 Book Publishing Manager</h3>
+ 
+<EditForm Model="@bookModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+ 
+    <div class="container mt-4">
+        <div class="row g-4">
+            <!-- Title -->
+            <div class="col-md-6">
+                <label class="form-label">
+                    📖 Book Title <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" @bind="bookModel.Title" />
+                <ValidationMessage For="@(() => bookModel.Title)" />
+            </div>
+ 
+            <!-- Subtitle (optional) -->
+            <div class="col-md-6">
+                <label class="form-label">🔖 Book Subtitle</label>
+                <input type="text" class="form-control" @bind="bookModel.Subtitle" />
+            </div>
+ 
+            <!-- Author -->
+            <div class="col-md-6">
+                <label class="form-label">
+                    ✍️ Book Author <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" @bind="bookModel.Author" />
+                <ValidationMessage For="@(() => bookModel.Author)" />
+            </div>
+ 
+            <!-- Contributor (optional) -->
+            <div class="col-md-6">
+                <label class="form-label">🤝 Book Contributor</label>
+                <input type="text" class="form-control" @bind="bookModel.Contributor" />
+            </div>
+ 
+            <!-- Genre -->
+            <div class="col-md-6">
+                <label class="form-label">
+                    📚 Genre <span class="text-danger">*</span>
+                </label>
+                <select class="form-select" @bind="bookModel.Genre">
+                    <option value="">-- Select Genre --</option>
+                    <option>Fiction</option>
+                    <option>Non-Fiction</option>
+                    <option>Science</option>
+                    <option>Biography</option>
+                    <option>Fantasy</option>
+                    <option>History</option>
+                </select>
+                <ValidationMessage For="@(() => bookModel.Genre)" />
+            </div>
+ 
+            <!-- Save Button -->
+            <div class="col-12">
+                <button class="btn btn-primary w-100" type="submit">✅ Save Book</button>
+            </div>
+ 
+            <!-- Success Message -->
+            @if (showConfirmation)
+            {
+                <div class="col-12">
+                    <div class="alert alert-success mt-3 text-center">
+                        ✔ Book saved!
+                    </div>
+                </div>
+            }
+        </div>
+ 
+        <!-- Book Table -->
+        @if (bookList.Any())
+        {
+            <h4 class="mt-5">📘 Saved Books</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped mt-2">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Title</th>
+                            <th>Subtitle</th>
+                            <th>Author</th>
+                            <th>Contributor</th>
+                            <th>Genre</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var book in bookList.OrderByDescending(b => b.Timestamp))
+                        {
+                            <tr>
+                                <td>@book.Title</td>
+            <td>@(string.IsNullOrWhiteSpace(book.Subtitle) ? "-" : book.Subtitle)</td>
+            <td>@book.Author</td>
+            <td>@(string.IsNullOrWhiteSpace(book.Contributor) ? "-" : book.Contributor)</td>
+            <td>@book.Genre</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</EditForm>
+ 
+@code {
+    private const string StorageKey = "bookList";
+ 
+    private BookModel bookModel = new();
+    private List<BookEntry> bookList = new();
+    private bool showConfirmation = false;
+ 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadBooksFromStorage();
+        }
+    }
+ 
+    private async Task LoadBooksFromStorage()
+    {
+        var json = await JS.InvokeAsync<string>("localStorage.getItem", StorageKey);//Using JavaScript interop to read localStorage when the page first loads:
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            bookList = JsonSerializer.Deserialize<List<BookEntry>>(json) ?? new();
+        }
+ 
+        StateHasChanged();
+    }
+ 
+    private async Task HandleValidSubmit()
+    {
+        var newEntry = new BookEntry
+        {
+            Title = bookModel.Title,
+            Subtitle = bookModel.Subtitle,
+            Author = bookModel.Author,
+            Contributor = bookModel.Contributor,
+            Genre = bookModel.Genre,
+            Timestamp = DateTime.Now
+        };
+ 
+        bookList.Add(newEntry);
+ 
+        // Keep only last 10 entries
+        bookList = bookList
+            .OrderByDescending(b => b.Timestamp)
+            .Take(10)
+            .OrderBy(b => b.Timestamp)
+            .ToList();
+ 
+        var json = JsonSerializer.Serialize(bookList);
+        await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, json);//It's stored in the browser's localStorage (client-side storage).
+ 
+        showConfirmation = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        showConfirmation = false;
+        await InvokeAsync(StateHasChanged);
+ 
+        // Reset form
+        bookModel = new();
+    }
+ 
+    public class BookModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        public string Title { get; set; } = string.Empty;
+ 
+        public string Subtitle { get; set; } = string.Empty;
+ 
+        [Required(ErrorMessage = "Author is required")]
+        public string Author { get; set; } = string.Empty;
+ 
+        public string Contributor { get; set; } = string.Empty;
+ 
+        [Required(ErrorMessage = "Genre is required")]
+        public string Genre { get; set; } = string.Empty;
+    }
+ 
+    private class BookEntry
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Subtitle { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public string Contributor { get; set; } = string.Empty;
+        public string Genre { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+    }
+}
+ 
+ 
+MainLayout.razor
+ 
+@inherits LayoutComponentBase
+ 
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+ 
+    <main>
+        <div class="top-row px-4">
+         <img src="images/profile.jpg" alt="Account" style="width: 40px; height: 35px; border-radius: 50%;" />
+ 
+        </div>
+ 
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+ 
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+ 
+ 
+ 
+MainLayout.razor.css
+ 
+ 
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+ 
+main {
+    flex: 1;
+    color: #111;
+}
+ 
+.sidebar {
+    background-color: #111;
+    color: white;
+}
+ 
+.top-row {
+    background-color: #000;
+    border-bottom: 1px solid #444;
+    justify-content: flex-end;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+ 
+.top-row ::deep a,
+.top-row ::deep .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+    text-decoration: none;
+    color: white;
+}
+ 
+.top-row ::deep a:hover,
+.top-row ::deep .btn-link:hover {
+    text-decoration: underline;
+}
+ 
+.top-row ::deep a:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+ 
+@media (max-width: 640.98px) {
+    .top-row {
+        justify-content: space-between;
+    }
+ 
+    .top-row ::deep a,
+    .top-row ::deep .btn-link {
+        margin-left: 0;
+    }
+}
+ 
+@media (min-width: 641px) {
+    .page {
+        flex-direction: row;
+    }
+ 
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+ 
+    .top-row {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+ 
+    .top-row.auth ::deep a:first-child {
+        flex: 1;
+        text-align: right;
+        width: 0;
+    }
+ 
+    .top-row,
+    article {
+        padding-left: 2rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
+ 
+#blazor-error-ui {
+    color-scheme: light only;
+    background: #fff0f0;
+    color: #000;
+    border: 1px solid #ccc;
+}
+ 
+ 
+ 
+.user-profile {
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+ 
+.user-profile img {
+    width: 40px;
+    height: 35px;
+    border-radius: 50%;
+}
+ 
+.username {
+    color: white;
+    font-size: 1rem;
+    font-family: Georgia, serif;
+}
+ 
+.popup-menu {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-width: 120px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+ 
+.popup-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 14px;
+    color: #111;
+    cursor: pointer;
+}
+ 
+.popup-menu button:hover {
+    background-color: #eee;
+}
+ 
+ 
+
+
+
+
+
+
+
+
+
+NavMenu.razor
+ 
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">WriteUp</a>
+    </div>
+</div>
+ 
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+ 
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="Home" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+ 
+        @* <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div> *@
+ 
+        @* <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div> *@
+ 
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-book" aria-hidden="true"></span> Books
+            </NavLink>
+        </div>
+ 
+            <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Publish
+            </NavLink>
+        </div>
+ 
+    </nav>
+</div>
+ 
+NavMenu.razor.css
+ 
+.navbar-toggler {
+    appearance: none;
+    cursor: pointer;
+    width: 3.5rem;
+    height: 2.5rem;
+    color: black;
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    border: 1px solid #333;
+    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='black' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem;
+}
+ 
+.navbar-toggler:checked {
+    background-color: #333;
+}
+ 
+.top-row {
+    min-height: 3.5rem;
+    background-color: #000;
+}
+ 
+.navbar-brand {
+    font-size: 3.1rem;
+    color: white;
+    font-family: Georgia, serif;
+}
+ 
+.bi {
+    display: inline-block;
+    position: relative;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    top: -1px;
+    background-size: cover;
+}
+ 
+.bi-house-door-fill-nav-menu,
+.bi-plus-square-fill-nav-menu,
+.bi-list-nested-nav-menu {
+    filter: grayscale(1) brightness(0.9);
+}
+ 
+.nav-item {
+    font-size: 0.9rem;
+    padding-bottom: 0.5rem;
+}
+ 
+.nav-item:first-of-type {
+    padding-top: 1rem;
+}
+ 
+.nav-item:last-of-type {
+    padding-bottom: 1rem;
+}
+ 
+.nav-item ::deep .nav-link {
+    color: white;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    line-height: 3rem;
+    width: 100%;
+    font-size: 1.1rem;
+    font-family: Georgia, serif;
+}
+ 
+.nav-item ::deep a.active {
+    background-color: #fff;
+    color: black;
+}
+ 
+.nav-item ::deep .nav-link:hover {
+    background-color: #444;
+    color: white;
+}
+ 
+.nav-scrollable {
+    display: none;
+}
+ 
+.navbar-toggler:checked ~ .nav-scrollable {
+    display: block;
+}
+ 
+@media (min-width: 641px) {
+    .navbar-toggler {
+        display: none;
+    }
+ 
+    .nav-scrollable {
+        display: block;
+        height: calc(100vh - 3.5rem);
+        overflow-y: auto;
+    }
+}
+ 
+ 
